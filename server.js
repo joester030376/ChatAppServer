@@ -1,5 +1,7 @@
 const app = require('./app');
-const db = require('./models/user.js');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+dotenv.config({path: "./config.env"});
 
 process.on("uncaughtException", (err) => {
     console.log(err);
@@ -10,19 +12,17 @@ const http = require("http");
 
 const server = http.createServer(app);
 
-const port = process.env.PORT || 8080;
+const DB = process.env.DBURI.replace("<PASSWORD>", process.env.DBPASSWORD);
 
-const { Sequelize } = require('sequelize');
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-    host: process.env.DB_HOST,
-    dialect: 'mysql' 
+mongoose.connect(DB, {
+   
+}).then((con) => {
+    console.log("Connected to mongo database");
+}).catch((err) => {
+    console.log("Did not connect to the mongo databse: ", err)
 });
 
-sequelize.authenticate().then(() => {
-    console.log('Connection has been established successfully.');
-}).catch((error) => {
-    console.err('Unable to connect to the database: ', error);
-});
+const port = process.env.PORT || 8808;
 
 server.listen(port, () => {
     console.log(`Server is listening to ${port}`);
@@ -34,6 +34,3 @@ process.on("unhandledRejection", (err) => {
         process.exit(1);
     })
 });
-
-
-

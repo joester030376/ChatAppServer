@@ -1,64 +1,81 @@
-const { Sequelize, DataTypes } = require('sequelize');
-const sequelize = new Sequelize('mysql');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
-const User = sequelize.define('User', {
+const userSchema = new mongoose.Schema({
     firstName: {
-        type: DataTypes.STRING,
-        allowNull: false
+        type: String,
+        required: [true, "First name is required."]
     },
     lastName: {
-        type: DataTypes.STRING,
-        allowNull: false
+        type: String,
+        required: [true, "Last name is required."]
     },
     avatar: {
-        type: DataTypes.STRING,        
+        type: String,        
     },
     email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-           isEmail: true
-        }
+        type: String,
+        required: [true, "Email is required"],
+        validator: function(email) {
+            return String(email)
+                .toLowerCase()
+                .match('/^([a-zA-Z0-9_\-\.] +)@([a-zA-Z0-9_\-\.]');
+        },
+        message: (props) => `Email (${props.value}) is invalid!`
     },
     password: {
-        type: DataTypes.STRING
+        type: String,
     },
     passwordChangedAt: {
-        type: DataTypes.DATE
+        type: Date,
     },
     passwordResetToken: {
-        type: DataTypes.STRING
+        type: String,
     },
     passwordResetExpires: {
-        type: DataTypes.DATE,
+        type: Date,
     },
     createdAt: {
-        type: DataTypes.DATE
-    }, updatedAt: {
-        type: DataTypes.DATE
+       type: Date 
+    },
+    updatedAt: {
+        type: Date
+    },
+    verified: {
+        type: Boolean,
+        default: false,
+    },
+    otp: {
+        type: Number,
+    },
+    otp_expiry_time: {
+        type: Date,
     }
 });
 
-// Synchronize the model with the database
-// This function will delete all existing tables in the database
-async function syncDatabase() {
-    await sequelize.sync();
-    console.log('Database synchronized.');
-  }
-  // Example usage
-  // recommended to be in controller file
-  async function run() {
-  
-    await syncDatabase();// remember to comment this after server runs ones.
-    // Create a new user
-    const newUser = await User.create({
-      firstName: 'john_doe',
-      lastName: "Varner",
-      email: 'john.doe@example.com',
-    });
-    console.log('New user created:', newUser.toJSON());
-  }
-  run();
+userSchema.pre("save", async function(next) {
+    // Only run this function if OTP is actually modified
 
- module.exports = User;
-  
+    if(!this.isModified("otp")) return next();
+
+    // Encrypt OTP
+    this.otp = await bcrypt.hash(this.otp, 12);
+
+    next();
+});
+
+userSchema.methods.correctPassword = async function (
+    candidatePassword,
+    userPassword,
+) {
+    return await bcrypt.compare(candidatePassword, userPassword)
+};
+userSchema.methods.correctOTP = async function (
+    candidateOTP,
+    userOTP,
+) {
+    return await bcrypt.compare(candidateOTP, userOTP);
+};
+
+const User = new mongoose.model("User", userSchema);
+module.exports = User;
