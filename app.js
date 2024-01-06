@@ -6,6 +6,7 @@ const mongosanitize = require("express-mongo-sanitize");
 const bodyParser = require("body-parser");
 const xss = require("xss");
 const cors = require("cors")
+const routes = require('./routes/index');
 
 const app = express();
 //app.use(xss());
@@ -32,6 +33,8 @@ const limiter = rateLimit({
 });
 
 app.use("/tawk", limiter);
+
+//app.use(routes);
 
 app.use(express.urlencoded({
     extended: true,

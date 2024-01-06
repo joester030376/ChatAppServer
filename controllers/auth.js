@@ -15,7 +15,13 @@ const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 exports.register = async (req, res, next) => {
     const {firstName, lastName, email, password} = req.body;
 
-    const filteredBody = filterObj(req.body, "firstName", "lastName", "password", "email");
+    const filteredBody = filterObj(
+        req.body, 
+        "firstName", 
+        "lastName", 
+        "password", 
+        "email"
+    );
 
     // check if a verified user with given email exists or not
     const existing_user = await User.findOne({email: email});
@@ -27,7 +33,8 @@ exports.register = async (req, res, next) => {
         })
     }
     else if(existing_user) {
-        const updated_user = await User.findOneAndUpdate({email: email}, filteredBody, {new: true, validateModelOnly: true});
+        await User.findOneAndUpdate({email: email}, 
+            filteredBody, {new: true, validateModelOnly: true});
 
         req.userId = existing_user._id;
         next();
