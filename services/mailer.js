@@ -1,44 +1,45 @@
-const sgMail = require('@sendgrid/mail');
+const nodeMailer = require('nodemailer');
 
-const dotenv = require('dotenv');
+const dotenv = require('dotenv').config({path: '../config.env'});
 
-dotenv.config({path: "../config.env"});
+async function nodeEmailer(args) {
 
-sgMail.setApiKey(process.env.SG_API_KEY);
+    const transporter = nodeMailer.createTransport({
+        host: process.env.BREVO_SMTP,
+        port: process.env.BREVO_PORT,
+        secure: false,
+        auth: {     
+          user: process.env.BREVO_USER,
+          pass: process.env.BREVO_PASSWORD,
+        },
+      });
 
-const sendSGMail = async ({
-    recipient,
-    sender,
-    subject,
-    html,
-    text,
-    attachments,    
-}) => {
-    try {
-        const from = sender || "joseph.varner@firehawkdigital.com";
+    const info = await transporter.sendMail({
+        to: args.to, // Email of the recipient
+        from: args.from, // This will be our verified sender
+        subject: args.subject, // the subject title of the email
+        html: args.html,
+        text: args.text,
+        attachments: args.attachments,                
+    });
 
-        const msg = {
-            to: recipient, // Email of the recipient
-            from: from, // This will be our verified sender
-            subject, // the subject title of the email
-            html: html,
-            text: text,
-            attachments,
-        };
+    console.log("Message sent: %s", info.messageId);
+};    
 
-        return sgMail.send(msg);
 
-    }
-    catch(error) {
-        console.log(error);
-    }
-}
-
-exports.sendEmail = async (args) => {
-    if(process.env.NODE_ENV == 'development') {
+exports.nodeEmailer = async (args) => {
+    if(process.env.NODE_ENV === 'development') {
         return new Promise.resolve();
     }
     else {
-        return sendSGMail(args);
+        return nodeEmailer(args);
     }
-}
+};
+
+
+
+
+
+
+
+

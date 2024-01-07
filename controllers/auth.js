@@ -16,31 +16,33 @@ const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 exports.register = async (req, res, next) => {
     const {firstName, lastName, email, password} = req.body;
 
+    console.log();
+   
     const filteredBody = filterObj(
         req.body, 
         "firstName", 
-        "lastName", 
+        "lastName",         
+        "email",
         "password", 
-        "email"
     );
 
     // check if a verified user with given email exists or not
     const existing_user = await User.findOne({email: email});
 
-    if(!existing_user && existing_user.verified) {
+    if(existing_user && existing_user.verified) {
         res.status(400).json({
             status: "error",
-            message: "Email is already in use. Please log in."
-        })
+            message: "Email is already in use. Please log in."            
+        });
     }
-    else if(existing_user) {
-        await User.findOneAndUpdate({email: email}, 
-            filteredBody, {new: true, validateModelOnly: true});
-
-        req.userId = existing_user._id;
+    else if(existing_user) {                
+        await User.findOneAndUpdate({email: email}, filteredBody, {new: true, validateModelOnly: true});
+        req.userId = existing_user._id;        
         next();
     }
     else {
+
+        console.log("New user");
 
         // if user record is not available in DB
         const new_user = await User.create(filteredBody)
@@ -52,7 +54,9 @@ exports.register = async (req, res, next) => {
 }
 
 exports.sendOTP = async (req, res, next) => {
+
     const {userId} = req;
+
     const new_otp = otpGenerator.generate(6, { 
         lowerCaseAlphabets: false, 
         upperCaseAlphabets: false, 
@@ -62,15 +66,16 @@ exports.sendOTP = async (req, res, next) => {
     const otp_expiry_time = Date.now() + 10*60*1000; // 10 minutes after OTP
 
     await User.findByIdAndUpdate(userId, {
-        otp: new_otp,
-        otp_expiry_time,
-    });
+        otp: new_otp,        
+        otp_expiry_time,        
+    }); 
 
-    mailService.sendEmail({
+    mailService.nodeEmailer({
         from: "joseph.varner@firehawkdigital.com",
-        to: "example@gmail.com",
+        to: 'joejenv2@hotmail.com',
         subject: "OTP for login for Text2Them",
-        text: `Your OTP is ${new_otp}. This is valid for 10 minutes`,
+        //text: `Here is your reset OTP...${new_otp}`,
+        html: `<p>Here is your reset OTP...${new_otp}</p`,
     });
 
     res.status(200).json({
@@ -155,8 +160,6 @@ exports.protect = async (req, res, next) => {
 
     if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
-
-
     }
     else if(req.cookies.jwt) {
         token = req.cookies.jwt;

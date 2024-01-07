@@ -58,19 +58,17 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre("save", async function(next) {
-    // Only run this function if OTP is actually modified
-
+    // Only run this function if OTP is actually modified    
     if(!this.isModified("otp")) return next();
-
+   
     // Encrypt OTP
-    this.otp = await bcrypt.hash(this.otp, 12);
+    this.otp = await bcrypt.hash(this.otp.toString(), 12);
 
     next();
 });
 
 userSchema.pre("save", async function(next) {
-    // Only run this function if OTP is actually modified
-
+    // Only run this function if OTP is actually modified   
     if(!this.isModified("password")) return next();
 
     // Encrypt password
@@ -109,8 +107,6 @@ userSchema.methods.createPasswordResetToken = function () {
 userSchema.methods.changedPasswordAfter = function (timestamp) {
     return timestamp < this.passwordChangedAt;
 }
-
-
 
 const User = new mongoose.model("User", userSchema);
 module.exports = User;

@@ -34,7 +34,7 @@ const limiter = rateLimit({
 
 app.use("/tawk", limiter);
 
-//app.use(routes);
+app.use(routes);
 
 app.use(express.urlencoded({
     extended: true,
