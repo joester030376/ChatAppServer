@@ -26,7 +26,6 @@ async function nodeEmailer(args) {
     console.log("Message sent: %s", info.messageId);
 };    
 
-
 exports.nodeEmailer = async (args) => {
     if(process.env.NODE_ENV === 'development') {
         return new Promise.resolve();

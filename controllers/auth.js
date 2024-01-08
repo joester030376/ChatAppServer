@@ -5,6 +5,7 @@ const otpGenerator = require('otp-generator');
 const crypto = require('crypto');
 const { promisify } = require('util');
 const mailService = require('../services/mailer');
+const otpEmailerHTMLOutput = require('../email_templates/otpEmailerHTMLOutput');
 
 const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 
@@ -15,8 +16,6 @@ const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 // Register new user
 exports.register = async (req, res, next) => {
     const {firstName, lastName, email, password} = req.body;
-
-    console.log();
    
     const filteredBody = filterObj(
         req.body, 
@@ -61,22 +60,31 @@ exports.sendOTP = async (req, res, next) => {
         lowerCaseAlphabets: false, 
         upperCaseAlphabets: false, 
         specialChars: false 
-    });
+    });  
+    
+    console.log(new_otp);
 
     const otp_expiry_time = Date.now() + 10*60*1000; // 10 minutes after OTP
 
-    await User.findByIdAndUpdate(userId, {
-        otp: new_otp,        
-        otp_expiry_time,        
+    const user = await User.findByIdAndUpdate(userId, {   
+        otp_expiry_time: otp_expiry_time,                            
     }); 
 
-    mailService.nodeEmailer({
-        from: "joseph.varner@firehawkdigital.com",
-        to: 'joejenv2@hotmail.com',
-        subject: "OTP for login for Text2Them",
-        //text: `Here is your reset OTP...${new_otp}`,
-        html: `<p>Here is your reset OTP...${new_otp}</p`,
-    });
+    user.otp = new_otp.toString();
+   
+    try {
+        await user.save({new: true, validateModifiedOnly: true}); 
+    }
+    catch(err) {
+        console.log("User did not save: ", err);
+    }
+
+    // mailService.nodeEmailer({
+    //     from: "joseph.varner@firehawkdigital.com",
+    //     to: user.email,
+    //     subject: "OTP for login for Text2Them",        
+    //     html: otpEmailerHTMLOutput(new_otp),
+    // });
 
     res.status(200).json({
         status: "success",
@@ -87,7 +95,7 @@ exports.sendOTP = async (req, res, next) => {
 exports.verifyOTP = async (req, res, next) => {
 
     // verify OTP and update user record accordingly
-    const {email, otp} = req.body;
+    const {email, otp} = req.body;    
 
     const user = await User.findOne({
         email,
@@ -101,7 +109,7 @@ exports.verifyOTP = async (req, res, next) => {
         });
     }
 
-    if(!await user.correctOTP(otp, user.otp)) {
+    if(!await user.correctOTP(otp.toString(), user.otp)) {
         res.status(400).json({
             status: "error",
             message: "OTP is incorrect"
@@ -110,8 +118,8 @@ exports.verifyOTP = async (req, res, next) => {
 
     // OTP is correct
     user.verified = true;
-    user.otp = undefined;
-
+    user.otp = 'undefined';
+    
     await user.save({new: true, validateModelOnly: true});
 
     const token = signToken(user._id);
@@ -137,20 +145,20 @@ exports.login = async (req, res, next) => {
 
     const user = await User.findOne({email: email}).select("+password");
 
-    if(!user || (await user.correctPassword(password, user.password))) {
+    if(!user || (!await user.correctPassword(password, user.password))) {
         res.status(400).json({
             status: "error",
             message: "Email or password is incorrect."
         });
     }
 
-    const token = signToken(user._id);
+    const token = signToken(user._id);    
 
-    res.status(200).json({
-        status: "success",
-        message: "Logged in successfully.",
-        token, 
-    })
+        res.status(200).json({
+            status: "success",
+            message: "Logged in successfully.",
+            token, 
+        });
 };
 
 exports.protect = async (req, res, next) => {
@@ -205,30 +213,30 @@ exports.protect = async (req, res, next) => {
 
 exports.forgotPassword = async (req, res, next) => {
     // 1 ) Get user email
-    const user = await User.findOne({email: req.body.email});
+    const user = await User.findOne({email: req.body.email});    
 
     if(!user) {
         res.status(400).json({
             status: "error",
             message: "There is no user with this email address."
         });
-
         return;
-
     }
 
     // 2 ) Generate a random reset token
     const resetToken = user.createPasswordResetToken();
+    await user.save();
 
-    const resetURL = `https://tawk.com/auth/reset-password/?code=${resetToken}`;
+    // const resetURL = `https://tawk.com/auth/reset-password/?code=${resetToken}`;
  
     try {
 
         // TODO => email to user with reset url
 
-        res.send(200).json({
+        res.status(200).json({            
             status: "success",
-            message: "Reset Password link sent to email"
+            message: "Reset Password link sent to email",   
+            resetToken         
         })
     }
     catch(error) {
@@ -246,13 +254,12 @@ exports.forgotPassword = async (req, res, next) => {
 
 exports.resetPassword = async (req, res, next) => {
     // 1) Get the user based on token
-
-    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
-
+    const hashedToken = crypto.createHash("sha256").update(req.body.resetToken).digest("hex");
+  
     const user = await User.findOne({
         passwordResetToken: hashedToken,
         passwordResetExpires: {$gt: Date.now()},
-    });
+    });   
 
     // 2) If token has expired or submission is out of time window
     if(!user) {
@@ -262,7 +269,6 @@ exports.resetPassword = async (req, res, next) => {
         });
 
         return;
-
     }
     
     // 3) Update users password and set resetToken & exipry to undefined

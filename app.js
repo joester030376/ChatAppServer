@@ -36,11 +36,13 @@ app.use("/tawk", limiter);
 
 app.use(routes);
 
+var imageDir = require('path').join(__dirname,'/images'); 
+app.use(express.static(imageDir)); 
+
 app.use(express.urlencoded({
     extended: true,
 }));
 
 app.use(mongosanitize());
-
 
 module.exports = app;
