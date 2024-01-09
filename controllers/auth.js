@@ -134,6 +134,8 @@ exports.verifyOTP = async (req, res, next) => {
 // Login authentication code
 exports.login = async (req, res, next) => {
 
+    console.log(req.body);
+
     const { email, password} = req.body;
 
     if(!email || !password) {
@@ -151,14 +153,15 @@ exports.login = async (req, res, next) => {
             message: "Email or password is incorrect."
         });
     }
-
-    const token = signToken(user._id);    
+    else {
+        const token = signToken(user._id);    
 
         res.status(200).json({
             status: "success",
             message: "Logged in successfully.",
             token, 
         });
+    }        
 };
 
 exports.protect = async (req, res, next) => {
