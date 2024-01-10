@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { promisify } = require('util');
 const mailService = require('../services/mailer');
 const otpEmailerHTMLOutput = require('../email_templates/otpEmailerHTMLOutput');
+const resetPasswordEmailerHTMLOutput = require('../email_templates/resetPasswordEmailerHTMLOutput');
 
 const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 
@@ -62,8 +63,6 @@ exports.sendOTP = async (req, res, next) => {
         specialChars: false 
     });  
     
-    console.log(new_otp);
-
     const otp_expiry_time = Date.now() + 10*60*1000; // 10 minutes after OTP
 
     const user = await User.findByIdAndUpdate(userId, {   
@@ -133,8 +132,6 @@ exports.verifyOTP = async (req, res, next) => {
 
 // Login authentication code
 exports.login = async (req, res, next) => {
-
-    console.log(req.body);
 
     const { email, password} = req.body;
 
@@ -216,6 +213,7 @@ exports.protect = async (req, res, next) => {
 
 exports.forgotPassword = async (req, res, next) => {
     // 1 ) Get user email
+    console.log(req.body);
     const user = await User.findOne({email: req.body.email});    
 
     if(!user) {
@@ -230,11 +228,17 @@ exports.forgotPassword = async (req, res, next) => {
     const resetToken = user.createPasswordResetToken();
     await user.save();
 
-    // const resetURL = `https://tawk.com/auth/reset-password/?code=${resetToken}`;
- 
+    const resetURL = `http://localhost:3000/auth/new-password/?resetToken=${resetToken}`;
+
     try {
 
         // TODO => email to user with reset url
+        mailService.nodeEmailer({
+            from: "joseph.varner@firehawkdigital.com",
+            to: user.email,
+            subject: "Reset for login for Text2Them",        
+            html: resetPasswordEmailerHTMLOutput(user.firstName ,resetURL), 
+        });
 
         res.status(200).json({            
             status: "success",
@@ -256,8 +260,11 @@ exports.forgotPassword = async (req, res, next) => {
 };
 
 exports.resetPassword = async (req, res, next) => {
+
+    console.log(req.body.token);
+
     // 1) Get the user based on token
-    const hashedToken = crypto.createHash("sha256").update(req.body.resetToken).digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(req.body.token).digest("hex");
   
     const user = await User.findOne({
         passwordResetToken: hashedToken,
