@@ -17,7 +17,7 @@ const signToken = (userId) => jwt.sign({userId}, process.env.JWT_SECRET);
 // Register new user
 exports.register = async (req, res, next) => {
     const {firstName, lastName, email, password} = req.body;
-   
+
     const filteredBody = filterObj(
         req.body, 
         "firstName", 
@@ -27,7 +27,7 @@ exports.register = async (req, res, next) => {
     );
 
     // check if a verified user with given email exists or not
-    const existing_user = await User.findOne({email: email});
+    const existing_user = await User.findOne({email: email});    
 
     if(existing_user && existing_user.verified) {
         res.status(400).json({
@@ -39,9 +39,7 @@ exports.register = async (req, res, next) => {
         await User.findOneAndUpdate({email: email}, filteredBody, {new: true, validateModelOnly: true});
         req.userId = existing_user._id;        
         next();
-    }
-    else {
-
+    }   
         console.log("New user");
 
         // if user record is not available in DB
@@ -49,8 +47,7 @@ exports.register = async (req, res, next) => {
 
         // generate OTP and send email to user
         req.userId = new_user._id;
-        next();
-    }
+        next();    
 }
 
 exports.sendOTP = async (req, res, next) => {
@@ -78,12 +75,12 @@ exports.sendOTP = async (req, res, next) => {
         console.log("User did not save: ", err);
     }
 
-    // mailService.nodeEmailer({
-    //     from: "joseph.varner@firehawkdigital.com",
-    //     to: user.email,
-    //     subject: "OTP for login for Text2Them",        
-    //     html: otpEmailerHTMLOutput(new_otp),
-    // });
+    mailService.nodeEmailer({
+        from: "joseph.varner@firehawkdigital.com",
+        to: user.email,
+        subject: "OTP for login for Text2Them",        
+        html: otpEmailerHTMLOutput(new_otp),
+    });
 
     res.status(200).json({
         status: "success",

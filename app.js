@@ -32,7 +32,7 @@ const limiter = rateLimit({
     message: "Too many requests from this IP, Please try again in one hour."
 });
 
-app.use("/tawk", limiter);
+app.use("/text2them", limiter);
 
 app.use(routes);
 
