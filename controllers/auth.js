@@ -39,7 +39,8 @@ exports.register = async (req, res, next) => {
         await User.findOneAndUpdate({email: email}, filteredBody, {new: true, validateModelOnly: true});
         req.userId = existing_user._id;        
         next();
-    }   
+    }  
+    else {
         console.log("New user");
 
         // if user record is not available in DB
@@ -47,7 +48,8 @@ exports.register = async (req, res, next) => {
 
         // generate OTP and send email to user
         req.userId = new_user._id;
-        next();    
+        next();   
+    }          
 }
 
 exports.sendOTP = async (req, res, next) => {
