@@ -163,48 +163,50 @@ exports.login = async (req, res, next) => {
 exports.protect = async (req, res, next) => {
     // 1) Getting a token (JWT) and check if it is actually there
 
-    let token;
+    console.log(req.body);
 
-    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-        token = req.headers.authorization.split(" ")[1];
-    }
-    else if(req.cookies.jwt) {
-        token = req.cookies.jwt;
-    }
-    else {
-        res.status(400).json({
-            status: "error",
-            message: "You are not logged in. Please log in to get access."
+    // let token;
 
-        });
+    // if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    //     token = req.headers.authorization.split(" ")[1];
+    // }
+    // else if(req.cookies.jwt) {
+    //     token = req.cookies.jwt;
+    // }
+    // else {
+    //     res.status(400).json({
+    //         status: "error",
+    //         message: "You are not logged in. Please log in to get access."
 
-        return;
-    }
+    //     });
 
-    // 2) Verification of token
-    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    //     return;
+    // }
 
-    // 3) Check if user still exists
-    const this_user = await User.findById(decoded.userId);
+    // // 2) Verification of token
+    // const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-    if(!this_user) {
-        res.status(400).json({
-            status: "error",
-            message: "The user does not exist."
-        });
-    }
+    // // 3) Check if user still exists
+    // const this_user = await User.findById(decoded.userId);
 
-    // 4) check if user changed their password after token was issued. 
+    // if(!this_user) {
+    //     res.status(400).json({
+    //         status: "error",
+    //         message: "The user does not exist."
+    //     });
+    // }
 
-    if(this_user.changedPasswordAfter(decoded.iat)) {
-        res.status(400).json({
-            status: "error",
-            message: "User recently updated password. Please log in again."
-        });
-    }
+    // // 4) check if user changed their password after token was issued. 
 
-    req.user = this_user;
-    next();
+    // if(this_user.changedPasswordAfter(decoded.iat)) {
+    //     res.status(400).json({
+    //         status: "error",
+    //         message: "User recently updated password. Please log in again."
+    //     });
+    // }
+
+    // req.user = this_user;
+    // next();
 
 };
 
