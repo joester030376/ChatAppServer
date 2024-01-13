@@ -126,6 +126,7 @@ exports.verifyOTP = async (req, res, next) => {
         status: "success",
         message: "OTP is verified successfully",
         token,
+        user_id: user._id
     });
 };
 
@@ -156,6 +157,7 @@ exports.login = async (req, res, next) => {
             status: "success",
             message: "Logged in successfully.",
             token, 
+            user_id: user._id
         });
     }        
 };
@@ -165,48 +167,48 @@ exports.protect = async (req, res, next) => {
 
     console.log(req.body);
 
-    // let token;
+    let token;
 
-    // if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-    //     token = req.headers.authorization.split(" ")[1];
-    // }
-    // else if(req.cookies.jwt) {
-    //     token = req.cookies.jwt;
-    // }
-    // else {
-    //     res.status(400).json({
-    //         status: "error",
-    //         message: "You are not logged in. Please log in to get access."
+    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        token = req.headers.authorization.split(" ")[1];
+    }
+    else if(req.cookies.jwt) {
+        token = req.cookies.jwt;
+    }
+    else {
+        res.status(400).json({
+            status: "error",
+            message: "You are not logged in. Please log in to get access."
 
-    //     });
+        });
 
-    //     return;
-    // }
+        return;
+    }
 
-    // // 2) Verification of token
-    // const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    // 2) Verification of token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-    // // 3) Check if user still exists
-    // const this_user = await User.findById(decoded.userId);
+    // 3) Check if user still exists
+    const this_user = await User.findById(decoded.userId);
 
-    // if(!this_user) {
-    //     res.status(400).json({
-    //         status: "error",
-    //         message: "The user does not exist."
-    //     });
-    // }
+    if(!this_user) {
+        res.status(400).json({
+            status: "error",
+            message: "The user does not exist."
+        });
+    }
 
-    // // 4) check if user changed their password after token was issued. 
+    // 4) check if user changed their password after token was issued. 
 
-    // if(this_user.changedPasswordAfter(decoded.iat)) {
-    //     res.status(400).json({
-    //         status: "error",
-    //         message: "User recently updated password. Please log in again."
-    //     });
-    // }
+    if(this_user.changedPasswordAfter(decoded.iat)) {
+        res.status(400).json({
+            status: "error",
+            message: "User recently updated password. Please log in again."
+        });
+    }
 
-    // req.user = this_user;
-    // next();
+    req.user = this_user;
+    next();
 
 };
 
