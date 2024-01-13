@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
-    sender :{
+    sender: {
         type: mongoose.Schema.ObjectId,
         ref: "User",
     },

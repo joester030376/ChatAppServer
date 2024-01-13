@@ -20,7 +20,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: `http://localhost:${process.env.PORT}}`,
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],       
     }
 });
 
@@ -111,6 +111,18 @@ io.on("connection", async (socket) => {
             message: "Friend Request Accepted"
         });        
     });
+
+    socket.on("get_direct_conversations", async ({user_id}, callback) => {
+        const existing_conversations = await OneToOneMessage.find({
+            participants: {$all: [user_id]}
+        }).populate("participants", "firstName lastName _id email status");
+
+        console.log(existing_conversations);
+
+        callback(existing_conversations)
+
+    });
+
 
     // Handle incoming text and link messages.
     socket.on("text_message", async(data) => {
