@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const mongosanitize = require("express-mongo-sanitize");
 const bodyParser = require("body-parser");
 const xss = require("xss");
-const cors = require("cors")
+const cors = require("cors");
 const routes = require('./routes/index');
 
 const app = express();
