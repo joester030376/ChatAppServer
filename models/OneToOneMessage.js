@@ -34,6 +34,6 @@ const oneToOneMessageSchema = new mongoose.Schema({
     ]
 })
 
-const oneToOneMessage = new mongoose.model("OneToOneMessage", oneToOneMessageSchema);
+const OneToOneMessage = new mongoose.model("OneToOneMessage", oneToOneMessageSchema);
 
 module.exports = OneToOneMessage;

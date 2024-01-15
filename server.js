@@ -15,6 +15,7 @@ process.on("uncaughtException", (err) => {
 const http = require("http");
 const User = require('./models/user');
 const FriendRequest = require('./models/friendRequest');
+const OneToOneMessage = require('./models/OneToOneMessage');
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -106,16 +107,50 @@ io.on("connection", async (socket) => {
         });        
     });
 
-    // socket.on("get_direct_conversations", async ({user_id}, callback) => {
-    //     const existing_conversations = await OneToOneMessage.find({
-    //         participants: {$all: [user_id]}
-    //     }).populate("participants", "firstName lastName _id email status");
+    socket.on("get_direct_conversations", async ({user_id}, callback) => {
+        const existing_conversations = await OneToOneMessage.find({
+            participants: {$all: [user_id]}
+        }).populate("participants", "firstName lastName _id email status");
 
-    //     console.log(existing_conversations);
+        console.log(existing_conversations);
 
-    //     callback(existing_conversations)
+        callback(existing_conversations)
 
-    // });
+    });
+
+    socket.on("start_conversation", async (data) => {
+        // data: {to, from}
+        const {to, from} = data;
+        
+        //Check if there is any existing conversation between users
+        const existing_conversation = await OneToOneMessage.find({
+            participants: {$size: 2, $all: [to, from]},
+        }).populate("participants", "firstName lastName _id email status");
+
+        console.log(existing_conversation[0], "Existing Conversation");
+
+        // if no exisiting_conversation
+        if(existing_conversation.length === 0) {
+            let new_chat = await OneToOneMessage.create({
+                participants: [to, from],
+            });
+
+            new_chat = await OneToOneMessage.findById(new_chat._id).populate(
+              "participants",
+              "firstName lastName _id email status"
+            );
+
+            console.log(new_chat);
+
+            socket.emit("start_chat", new_chat);
+
+        }       
+        else {
+            // if there is exisiting_conversation
+            socket.emit("open_chat", existing_conversation[0]);
+        }
+
+    });
 
 
     // // Handle incoming text and link messages.
