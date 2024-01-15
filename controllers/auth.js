@@ -26,6 +26,8 @@ exports.register = async (req, res, next) => {
         "password", 
     );
 
+    console.log(req.body);
+
     // check if a verified user with given email exists or not
     const existing_user = await User.findOne({email: email});    
 
@@ -54,7 +56,7 @@ exports.register = async (req, res, next) => {
 
 exports.sendOTP = async (req, res, next) => {
 
-    const {userId} = req;
+    const {userId} = req;    
 
     const new_otp = otpGenerator.generate(6, { 
         lowerCaseAlphabets: false, 
