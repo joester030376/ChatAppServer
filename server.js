@@ -44,7 +44,12 @@ server.listen(port, () => {
 io.on("connection", async (socket) => {  
     
     const user_id = socket.handshake.query["user_id"];
+
     const socket_id = socket.id;
+
+    console.log(socket);
+
+    console.log(`User connected ${socket_id}`);
 
     if(Boolean(user_id)) {
         await User.findByIdAndUpdate(user_id, {socket_id, status: "Online" });
@@ -153,44 +158,45 @@ io.on("connection", async (socket) => {
     });
 
 
-    // // Handle incoming text and link messages.
-    // socket.on("text_message", async(data) => {
+    // Handle incoming text and link messages.
+    socket.on("text_message", async(data) => {
 
-    //     // data: {to, from, text}
+        console.log('Recieved Message', data);
 
-    //     // Create a new conversation subject to a condition if it doesnt exist and add one new message to messages list
+        // data: {to, from, text}
 
+        // Create a new conversation subject to a condition if it doesnt exist and add one new message to messages list
 
-    //     // Save changes to database
+        // Save changes to database
 
-    //     // Emit incoming_message -> to user
+        // Emit incoming_message -> to user
 
-    //     // Emit outgoing_message -> from user
-    // });
+        // Emit outgoing_message -> from user
+    });
 
-    // // Handle incoming media and documents
-    // socket.on("file_message", async(data) => {
-    //     console.log("Received Message", data);
+    // Handle incoming media and documents
+    socket.on("file_message", async(data) => {
+        console.log("Received Message", data);
 
-    //     // data: {to, from, text, file}
+        // data: {to, from, text, file}
 
-    //     // get the file extension
-    //     const fileExtension = path.extname(data.file.name);
+        // get the file extension
+        const fileExtension = path.extname(data.file.name);
 
-    //     // generate a unique filename
-    //     const fileName = `${Date.now()}_${Math.floor(Math.random() * 10000)}${fileExtension}`
+        // generate a unique filename
+        const fileName = `${Date.now()}_${Math.floor(Math.random() * 10000)}${fileExtension}`
         
-    //     // Upload file to AWS s3
+        // Upload file to AWS s3
 
-    //     // Create a new conversation subject to a condition if it doesnt exist and add one new message to messages list
+        // Create a new conversation subject to a condition if it doesnt exist and add one new message to messages list
 
-    //     // Save changes to database
+        // Save changes to database
 
-    //     // Emit incoming_message -> to user
+        // Emit incoming_message -> to user
 
-    //     // Emit outgoing_message -> from user
+        // Emit outgoing_message -> from user
 
-    // });
+    });
 
     socket.on("end", async (data) => {
         // Find user by _id and set the status to Offline
