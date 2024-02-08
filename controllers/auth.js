@@ -157,12 +157,12 @@ exports.login = async (req, res, next) => {
         
         console.log(user._id);
 
-        // res.status(200).json({
-        //     status: "success",
-        //     message: "Logged in successfully.",
-        //     token, 
-        //     user_id: user._id
-        // });
+        res.status(200).json({
+            status: "success",
+            message: "Logged in successfully.",
+            token, 
+            user_id: user._id
+        });
     }        
 };
 

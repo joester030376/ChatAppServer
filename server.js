@@ -41,13 +41,11 @@ server.listen(port, () => {
     console.log(`Server is listening to ${port}`);
 });
 
-io.on("connection", async (socket) => {  
-    
-    const user_id = socket.handshake.query["user_id"];
+io.on("connection", async (socket) => {     
 
-    const socket_id = socket.id;
+    const user_id = socket.handshake.query["user_id"];   
 
-    console.log(socket);
+    const socket_id = socket.id;    
 
     console.log(`User connected ${socket_id}`);
 
