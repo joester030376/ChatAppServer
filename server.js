@@ -82,14 +82,11 @@ io.on("connection", async (socket) => {
         })
     });
 
-    socket.on("accept_request", async (data) => {
-        console.log(data);
+    socket.on("accept_request", async (data) => {       
 
         const request_doc = await FriendRequest.findById(data.request_id);
         
         console.log(request_doc);
-
-        // request_id
 
         const sender = await User.findById(request_doc.sender);
         const receiver = await User.findById(request_doc.recipient);
@@ -117,15 +114,17 @@ io.on("connection", async (socket) => {
 
         console.log(existing_conversations);
 
-        callback(existing_conversations)
+        callback(existing_conversations);
 
     });
 
     socket.on("start_conversation", async (data) => {
         // data: {to, from}
         const {to, from} = data;
+
+        console.log(data);
         
-        //Check if there is any existing conversation between users
+        // Check if there is any existing conversation between users
         const existing_conversation = await OneToOneMessage.find({
             participants: {$size: 2, $all: [to, from]},
         }).populate("participants", "firstName lastName _id email status");
@@ -133,10 +132,12 @@ io.on("connection", async (socket) => {
         console.log(existing_conversation[0], "Existing Conversation");
 
         // if no exisiting_conversation
-        if(existing_conversation.length === 0) {
+            if(existing_conversation.length === 0) {
             let new_chat = await OneToOneMessage.create({
                 participants: [to, from],
             });
+
+            console.log(new_chat);
 
             new_chat = await OneToOneMessage.findById(new_chat._id).populate(
               "participants",
@@ -147,29 +148,58 @@ io.on("connection", async (socket) => {
 
             socket.emit("start_chat", new_chat);
 
-        }       
+            }       
         else {
             // if there is exisiting_conversation
-            socket.emit("open_chat", existing_conversation[0]);
+            socket.emit("start_chat", existing_conversation[0]);
         }
 
+    });
+
+    socket.on("get_messages", async (data, callback) => {
+        const { messages } = await OneToOneMessage.findById(
+          data.conversation_id
+        ).select("messages");
+        callback(messages);
     });
 
 
     // Handle incoming text and link messages.
     socket.on("text_message", async(data) => {
-
         console.log('Recieved Message', data);
 
-        // data: {to, from, text}
+        // data: {to, from, message, conversation_id, type}
+        const {to, from, message, conversation_id, type} = data;
+
+        const to_user = await User.findById(to);
+        const from_user = await User.findById(from);
+
+        const new_message = {
+            to,
+            from,
+            type,
+            text: message,
+            created_at: Date.now()
+        };
 
         // Create a new conversation subject to a condition if it doesnt exist and add one new message to messages list
+        const chat = await OneToOneMessage.findById(conversation_id);
+        chat.messages.push(new_message);
+        
+         // Save changes to database
+        await chat.save({});       
 
-        // Save changes to database
+        // Emit new_message -> to user
+        io.to(to_user.socket_id).emit("new_message", {
+            conversation_id,
+            message: new_message,
+        });
 
-        // Emit incoming_message -> to user
-
-        // Emit outgoing_message -> from user
+        // Emit new_message -> from user
+        io.to(from_user.socket_id).emit("new_message", {
+            conversation_id,
+            message: new_message
+        });
     });
 
     // Handle incoming media and documents
